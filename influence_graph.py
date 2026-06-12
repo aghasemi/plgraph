@@ -189,7 +189,7 @@ def bundle_edge_lines(edges, ids):
             continue
         jid = new_junction()
         lines.append(f'    {ids[src]} --> {jid}((" "))')
-        tlist = " & ".join(sorted(targets, key=lambda t: ids[t]))
+        tlist = " & ".join(ids[t] for t in sorted(targets, key=lambda t: ids[t]))
         lines.append(f"    {jid} --> {tlist}")
         junction_styles.append(f"    style {jid} height:10px,width:10px,fill:#c0392b,stroke:#333,stroke-width:1px")
         for dst in targets:
@@ -209,7 +209,7 @@ def bundle_edge_lines(edges, ids):
                     used.add((src, dst))
             continue
         jid = new_junction()
-        slist = " & ".join(sorted(srcs, key=lambda s: ids[s]))
+        slist = " & ".join(ids[s] for s in sorted(srcs, key=lambda s: ids[s]))
         lines.append(f'    {slist} --- {jid}((" "))')
         lines.append(f"    {jid} --> {ids[dst]}")
         junction_styles.append(f"    style {jid} height:10px,width:10px,fill:#c0392b,stroke:#333,stroke-width:1px")
