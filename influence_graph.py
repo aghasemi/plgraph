@@ -160,6 +160,8 @@ def bundle_edge_lines(edges, ids):
     lines = []
     junction_styles = []
     junction_count = 0
+    bidir_link_indices = []
+    link_idx = 0
 
     def new_junction():
         nonlocal junction_count
@@ -167,7 +169,7 @@ def bundle_edge_lines(edges, ids):
         junction_count += 1
         return jid
 
-    # Step 1: Bidirectional pairs → two separate thick arrows
+    # Step 1: Bidirectional pairs → single double-headed arrow (<===>)
     for src, dst in filtered:
         if (src, dst) in used or (dst, src) in used:
             continue
@@ -175,8 +177,9 @@ def bundle_edge_lines(edges, ids):
             used.add((src, dst))
             used.add((dst, src))
             a, b = sorted([src, dst])
-            lines.append(f"    {ids[a]} ==> {ids[b]}")
-            lines.append(f"    {ids[b]} ==> {ids[a]}")
+            lines.append(f"    {ids[a]} <===> {ids[b]}")
+            bidir_link_indices.append(link_idx)
+            link_idx += 1
 
     # Step 2: Group remaining by source (fan-out via junction nodes for ≥2 targets)
     source_groups = defaultdict(set)
@@ -189,8 +192,10 @@ def bundle_edge_lines(edges, ids):
             continue
         jid = new_junction()
         lines.append(f'    {ids[src]} --> {jid}((" "))')
+        link_idx += 1
         tlist = " & ".join(ids[t] for t in sorted(targets, key=lambda t: ids[t]))
         lines.append(f"    {jid} --> {tlist}")
+        link_idx += len(targets)
         junction_styles.append(f"    style {jid} height:10px,width:10px,fill:#c0392b,stroke:#333,stroke-width:1px")
         for dst in targets:
             used.add((src, dst))
@@ -206,17 +211,25 @@ def bundle_edge_lines(edges, ids):
             for src in srcs:
                 if (src, dst) not in used:
                     lines.append(f"    {ids[src]} --> {ids[dst]}")
+                    link_idx += 1
                     used.add((src, dst))
             continue
         jid = new_junction()
         slist = " & ".join(ids[s] for s in sorted(srcs, key=lambda s: ids[s]))
         lines.append(f'    {slist} --- {jid}((" "))')
+        link_idx += len(srcs)
         lines.append(f"    {jid} --> {ids[dst]}")
+        link_idx += 1
         junction_styles.append(f"    style {jid} height:10px,width:10px,fill:#c0392b,stroke:#333,stroke-width:1px")
         for src in srcs:
             used.add((src, dst))
 
     lines.extend(junction_styles)
+
+    if bidir_link_indices:
+        idx_str = ",".join(str(i) for i in bidir_link_indices)
+        lines.append(f"    linkStyle {idx_str} stroke:#8e44ad,stroke-width:3px")
+
     return lines
 
 
