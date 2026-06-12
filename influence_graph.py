@@ -340,7 +340,7 @@ def html_diagram(nodes, edges, names):
 
     node_colors = compute_node_colors(list(ids.values()), [(ids[src], ids[dst]) for src, dst in edges if src in ids and dst in ids])
 
-    flowchart = ["%%{init: {'flowchart': {'nodeSpacing': 150, 'rankSpacing': 200, 'diagramMarginX': 10, 'diagramMarginY': 10, 'defaultRenderer': 'elk'}, 'maxTextSize': 900000}}%%", "flowchart-elk TD"]
+    flowchart = ["%%{init: {'flowchart': {'nodeSpacing': 150, 'rankSpacing': 200, 'diagramMarginX': 10, 'diagramMarginY': 10, 'curve': 'stepAfter', 'defaultRenderer': 'elk'}, 'maxTextSize': 900000}}%%", "flowchart-elk TD"]
     for n in s:
         d = abbreviate_name(n, names.get(n, simp(n))).replace('"', "'")
         wiki_url = f"https://en.wikipedia.org/wiki/{n.replace(' ', '_')}"
