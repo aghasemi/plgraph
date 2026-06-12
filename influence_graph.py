@@ -429,7 +429,7 @@ def html_diagram(nodes, edges, names):
                     if (e.ctrlKey || e.metaKey) {{
                         e.preventDefault();
                         var delta = e.deltaY > 0 ? -0.05 : 0.05;
-                        currentZoom = Math.max(0.02, Math.min(3, currentZoom + delta));
+                        currentZoom = Math.max(0.02, Math.min(100, currentZoom + delta));
                         fitMode = 'zoom';
                         applyZoomManual();
                     }}
@@ -468,7 +468,7 @@ def html_diagram(nodes, edges, names):
         }}
 
         function zoomIn() {{
-            currentZoom = Math.min(3, currentZoom + 0.1);
+            currentZoom = Math.min(100, currentZoom + 0.1);
             fitMode = 'zoom';
             applyZoomManual();
         }}
