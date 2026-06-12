@@ -134,6 +134,25 @@ def simp(t):
     return t
 
 
+LONG_NAME_ABBREVIATIONS = {
+    "Document_Style_Semantics_and_Specification_Language": "DSSSL",
+    "Jet_Pulsion_Laboratory_Display_Information_System": "JPLDIS",
+    "Communicating_sequential_processes": "CSP",
+    "Semi-Automatic_Ground_Environment": "SAGE",
+    "Polymorphic_Programming_Language": "PPL",
+    "Information_Processing_Language": "IPL",
+    "Common_Lisp_Object_System": "CLOS",
+}
+
+
+def abbreviate_name(wiki_title, display_name):
+    if wiki_title in LONG_NAME_ABBREVIATIONS:
+        return LONG_NAME_ABBREVIATIONS[wiki_title]
+    if len(display_name) > 35:
+        return simp(display_name)
+    return display_name
+
+
 def bundle_edge_lines(edges, ids):
     filtered = [(src, dst) for src, dst in edges if src in ids and dst in ids]
     edge_set = set(filtered)
@@ -209,7 +228,7 @@ def diagram(nodes, edges, names):
 
     L = ["# Programming Language Influence Graph", "", "```mermaid", "flowchart TD"]
     for n in s:
-        d = names.get(n, simp(n)).replace('"', "'")
+        d = abbreviate_name(n, names.get(n, simp(n))).replace('"', "'")
         wiki_url = f"https://en.wikipedia.org/wiki/{n.replace(' ', '_')}"
         L.append(f'    {ids[n]}["<a href=\'{wiki_url}\'>{d}</a>"]')
     L.append("")
@@ -321,9 +340,9 @@ def html_diagram(nodes, edges, names):
 
     node_colors = compute_node_colors(list(ids.values()), [(ids[src], ids[dst]) for src, dst in edges if src in ids and dst in ids])
 
-    flowchart = ["%%{init: {'flowchart': {'nodeSpacing': 150, 'rankSpacing': 200, 'diagramMarginX': 10, 'diagramMarginY': 10, 'defaultRenderer': 'elk', 'curve': 'stepAfter'}, 'maxTextSize': 900000}}%%", "flowchart-elk TD"]
+    flowchart = ["%%{init: {'flowchart': {'nodeSpacing': 150, 'rankSpacing': 200, 'diagramMarginX': 10, 'diagramMarginY': 10, 'defaultRenderer': 'elk'}, 'maxTextSize': 900000}}%%", "flowchart-elk TD"]
     for n in s:
-        d = names.get(n, simp(n)).replace('"', "'")
+        d = abbreviate_name(n, names.get(n, simp(n))).replace('"', "'")
         wiki_url = f"https://en.wikipedia.org/wiki/{n.replace(' ', '_')}"
         flowchart.append(f'    {ids[n]}["<a href=\'{wiki_url}\'>{d}</a>"]')
     flowchart.append("")
@@ -367,69 +386,31 @@ def html_diagram(nodes, edges, names):
         let currentZoom = 1;
         let fitMode = 'fill';
 
-        function fixNodeSizes() {{
-            const nodes = document.querySelectorAll('.mermaid .node');
-            nodes.forEach(function(node) {{
-                const fo = node.querySelector('foreignObject');
-                const rect = node.querySelector('rect.label-container');
-                const labelDiv = fo ? fo.querySelector('div') : null;
-                if (!fo || !rect || !labelDiv) return;
-
-                labelDiv.style.display = 'inline-block';
-                labelDiv.style.width = 'auto';
-                labelDiv.style.whiteSpace = 'nowrap';
-
-                var textW = labelDiv.scrollWidth;
-                var padX = 10;
-                var newFoW = textW + padX * 2;
-                var rectPadX = 40;
-                var newRectW = newFoW + rectPadX * 2;
-
-                fo.setAttribute('width', Math.ceil(newFoW));
-                rect.setAttribute('width', Math.ceil(newRectW));
-                rect.setAttribute('x', Math.ceil(-newRectW / 2));
-
-                var labelG = fo.closest('g.label');
-                if (labelG) {{
-                    var tx = Math.ceil(-newRectW / 2 + rectPadX);
-                    labelG.setAttribute('transform', 'translate(' + tx + ', -12)');
-                }}
-            }});
-        }}
-
-        function applyZoom() {{
-            var container = document.getElementById('diagram-container');
-            var svg = container ? container.querySelector('svg') : null;
-            var zoomLevel = document.getElementById('zoom-level');
-            if (fitMode === 'fill') {{
-                autoFit();
-                return;
-            }}
-            if (container) {{
-                container.style.zoom = currentZoom;
-            }}
-            if (zoomLevel) {{
-                zoomLevel.textContent = Math.round(currentZoom * 100) + '%';
-            }}
-        }}
-
         function autoFit() {{
             var wrapper = document.querySelector('.diagram-wrapper');
             var container = document.getElementById('diagram-container');
             var svg = container ? container.querySelector('svg') : null;
             if (!svg || !wrapper) return;
 
-            var wrapW = wrapper.clientWidth - 40;
-            var wrapH = wrapper.clientHeight - 40;
+            var wrapW = wrapper.clientWidth;
+            var wrapH = wrapper.clientHeight;
 
-            container.style.zoom = 1;
+            if (!svg.getAttribute('viewBox')) {{
+                var bb = svg.getBBox();
+                svg.setAttribute('viewBox', bb.x + ' ' + bb.y + ' ' + bb.width + ' ' + bb.height);
+            }}
+
             container.style.display = 'block';
             container.style.width = wrapW + 'px';
             container.style.height = wrapH + 'px';
             container.style.overflow = 'hidden';
+            container.style.padding = '0';
 
-            svg.style.width = '100%';
-            svg.style.height = '100%';
+            svg.setAttribute('width', wrapW);
+            svg.setAttribute('height', wrapH);
+            svg.style.width = wrapW + 'px';
+            svg.style.height = wrapH + 'px';
+            svg.style.maxWidth = 'none';
             svg.setAttribute('preserveAspectRatio', 'none');
 
             fitMode = 'fill';
@@ -439,13 +420,8 @@ def html_diagram(nodes, edges, names):
 
         document.addEventListener('DOMContentLoaded', function() {{
             setTimeout(function() {{
-                fixNodeSizes();
                 autoFit();
-                var wrapper = document.querySelector('.diagram-wrapper');
-                if (wrapper) {{
-                    wrapper.scrollLeft = (wrapper.scrollWidth - wrapper.clientWidth) / 2;
-                }}
-            }}, 500);
+            }}, 1500);
 
             var wrapper = document.querySelector('.diagram-wrapper');
             if (wrapper) {{
@@ -464,19 +440,24 @@ def html_diagram(nodes, edges, names):
         function applyZoomManual() {{
             var container = document.getElementById('diagram-container');
             var svg = container ? container.querySelector('svg') : null;
+            var wrapper = document.querySelector('.diagram-wrapper');
             var zoomLevel = document.getElementById('zoom-level');
+            if (svg) {{
+                svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+                svg.style.width = '';
+                svg.style.height = '';
+            }}
             if (container) {{
+                container.style.display = 'inline-block';
                 container.style.width = '';
                 container.style.height = '';
                 container.style.overflow = '';
-                container.style.display = 'inline-block';
+                container.style.padding = '';
+                container.style.zoom = currentZoom;
             }}
-            if (svg) {{
-                svg.style.width = '';
-                svg.style.height = '';
-                svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+            if (wrapper) {{
+                wrapper.style.overflow = 'auto';
             }}
-            container.style.zoom = currentZoom;
             if (zoomLevel) {{
                 zoomLevel.textContent = Math.round(currentZoom * 100) + '%';
             }}
@@ -540,13 +521,11 @@ def html_diagram(nodes, edges, names):
             width: 100%;
         }}
         #diagram-container {{
-            display: inline-block;
-            padding: 20px;
-            min-width: min-content;
-            min-height: min-content;
+            display: block;
+            overflow: hidden;
         }}
         .mermaid {{
-            display: inline-block;
+            display: block;
         }}
         .mermaid .edgePath .path.thick {{
             stroke: #c0392b !important;
