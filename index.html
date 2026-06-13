@@ -26,6 +26,11 @@
 
         let currentZoom = 1;
         let fitMode = 'fill';
+        let isPanning = false;
+        let panStartX = 0;
+        let panStartY = 0;
+        let panScrollLeft = 0;
+        let panScrollTop = 0;
 
         function autoFit() {
             var wrapper = document.querySelector('.diagram-wrapper');
@@ -75,6 +80,39 @@
                         applyZoomManual();
                     }
                 }, { passive: false });
+
+                wrapper.addEventListener('mousedown', function(e) {
+                    if (e.target.tagName === 'A' || e.target.closest('a')) return;
+                    isPanning = true;
+                    panStartX = e.clientX;
+                    panStartY = e.clientY;
+                    panScrollLeft = wrapper.scrollLeft;
+                    panScrollTop = wrapper.scrollTop;
+                    wrapper.style.cursor = 'grabbing';
+                    e.preventDefault();
+                });
+
+                wrapper.addEventListener('mousemove', function(e) {
+                    if (!isPanning) return;
+                    var dx = e.clientX - panStartX;
+                    var dy = e.clientY - panStartY;
+                    wrapper.scrollLeft = panScrollLeft - dx;
+                    wrapper.scrollTop = panScrollTop - dy;
+                });
+
+                wrapper.addEventListener('mouseup', function(e) {
+                    if (isPanning) {
+                        isPanning = false;
+                        wrapper.style.cursor = 'grab';
+                    }
+                });
+
+                wrapper.addEventListener('mouseleave', function(e) {
+                    if (isPanning) {
+                        isPanning = false;
+                        wrapper.style.cursor = 'grab';
+                    }
+                });
             }
         });
 
@@ -160,6 +198,7 @@
             height: calc(100vh - 180px);
             min-height: 500px;
             width: 100%;
+            cursor: grab;
         }
         #diagram-container {
             display: block;
